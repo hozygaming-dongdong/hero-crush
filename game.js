@@ -1015,6 +1015,27 @@ function playComboSound(chain) {
   playTone(base, .09, "triangle", .07);
   playTone(base * 1.5, .08, "sine", .045, .045);
   if (chain >= 3) playTone(base * 2, .11, "square", .035, .09);
+  if (chain === 6) speakCombo666();
+}
+
+function speakCombo666() {
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    playCombo666Fallback();
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance("老鐵六六六");
+  utterance.lang = "zh-CN";
+  utterance.rate = 1.12;
+  utterance.pitch = .86;
+  utterance.volume = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
+function playCombo666Fallback() {
+  [660, 660, 660, 880, 990, 1180].forEach((freq, index) => {
+    playTone(freq, .1, index < 3 ? "square" : "triangle", .075, index * .08);
+  });
 }
 
 function playSpecialSound(kind) {
