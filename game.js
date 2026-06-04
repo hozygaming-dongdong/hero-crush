@@ -590,8 +590,9 @@ async function clearCells(cells, chain, label) {
   const sources = getDamageSourceLabels({ chain, clearCount: finalCells.length, typeCount: clearedTypes.size, clearedTypes, clearedSpecials, specialCleared, bonusCoins });
   if (bonusCoins > 0) coins += bonusCoins;
   render(new Set(unique.keys()));
-  showDamageBreakdown(sources);
-  logEl.textContent = `${label}！消除 ${finalCells.length} 格，造成 ${damage} 傷害${bonusCoins ? `，賞金 +${bonusCoins}` : ""}。`;
+  showDamageBreakdown(sources.length ? sources : ["Base Damage"]);
+  const sourceText = sources.length ? ` 來源：${sources.join("、")}` : "";
+  logEl.textContent = `${label}！消除 ${finalCells.length} 格，造成 ${damage} 傷害${bonusCoins ? `，賞金 +${bonusCoins}` : ""}。${sourceText}`;
   playImpactCallout(chain, damage);
   await sleep(260);
   for (const cell of finalCells) board[cell.r][cell.c] = null;
@@ -665,7 +666,7 @@ function showDamageBreakdown(labels) {
   window.setTimeout(() => {
     damageBreakdownEl.classList.remove("show");
     damageBreakdownEl.setAttribute("aria-hidden", "true");
-  }, 920);
+  }, 1300);
 }
 
 function showComboBurst(chain) {
