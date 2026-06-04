@@ -3,11 +3,11 @@ const BET = 10;
 const START_COINS = 1000;
 const BOSS_REWARD = 900;
 const STAGES = [
-  { name: "翠玉史萊姆", hp: 1800, phase: "小怪戰", reward: 0, grants: ["striped-row", "striped-col"], art: "assets/monster-slime.svg" },
-  { name: "骸骨劍兵", hp: 2300, phase: "小怪戰", reward: 0, grants: ["striped-row", "striped-col", "bomb"], art: "assets/monster-skeleton.svg" },
-  { name: "森林哥布林", hp: 2900, phase: "小怪戰", reward: 0, grants: ["bomb", "striped-row", "striped-col"], art: "assets/monster-goblin.svg" },
-  { name: "暗影巫師", hp: 3600, phase: "小怪戰", reward: 0, grants: ["rainbow", "bomb", "striped-row"], art: "assets/monster-mage.svg" },
-  { name: "赤焰巨龍", hp: 9800, phase: "BOSS 戰", reward: BOSS_REWARD, grants: ["rainbow", "bomb"], art: "assets/monster-dragon.svg" }
+  { name: "翠玉史萊姆", hp: 2700, phase: "小怪戰", reward: 0, grants: ["striped-row", "striped-col"], art: "assets/monster-slime.svg" },
+  { name: "骸骨劍兵", hp: 3450, phase: "小怪戰", reward: 0, grants: ["striped-row", "striped-col", "bomb"], art: "assets/monster-skeleton.svg" },
+  { name: "森林哥布林", hp: 4350, phase: "小怪戰", reward: 0, grants: ["bomb", "striped-row", "striped-col"], art: "assets/monster-goblin.svg" },
+  { name: "暗影巫師", hp: 5400, phase: "小怪戰", reward: 0, grants: ["rainbow", "bomb", "striped-row"], art: "assets/monster-mage.svg" },
+  { name: "赤焰巨龍", hp: 14700, phase: "BOSS 戰", reward: BOSS_REWARD, grants: ["rainbow", "bomb"], art: "assets/monster-dragon.svg" }
 ];
 const TYPES = ["sword", "fire", "shield", "coin", "rune"];
 const DAMAGE = {
@@ -30,8 +30,9 @@ const RARITY_LABELS = {
   epic: "EPIC"
 };
 const AUGMENT_POOL = [
-  { id: "coin-300", rarity: "common", name: "冒險小袋", desc: "立即獲得 300 金幣。", effect: { coinNow: 300 } },
-  { id: "coin-500", rarity: "rare", name: "閃亮錢袋", desc: "立即獲得 500 金幣。", effect: { coinNow: 500 } },
+  { id: "coin-30", rarity: "common", name: "冒險小袋", desc: "立即獲得 30 金幣。", effect: { coinNow: 30 } },
+  { id: "coin-70", rarity: "rare", name: "閃亮錢袋", desc: "立即獲得 70 金幣。", effect: { coinNow: 70 } },
+  { id: "coin-100", rarity: "epic", name: "勇者金庫", desc: "立即獲得 100 金幣。", effect: { coinNow: 100 } },
   { id: "chest-min", rarity: "rare", name: "寶箱保底", desc: "BOSS 寶箱最低獎金 +300。", effect: { chestMin: 300 } },
   { id: "chest-boost", rarity: "epic", name: "鍍金寶箱", desc: "BOSS 寶箱獎金 +15%。", effect: { chestMultiplier: .15 } },
   { id: "all-damage", rarity: "rare", name: "勇者氣勢", desc: "所有符石傷害 +15%。", effect: { allMultiplier: .15 } },
@@ -50,7 +51,7 @@ const AUGMENT_POOL = [
   { id: "special-flat", rarity: "rare", name: "符石共振", desc: "特殊符石被消除時，額外 +150 傷害。", effect: { specialFlat: 150 } },
   { id: "boss-specials", rarity: "epic", name: "決戰布陣", desc: "進入 BOSS 關時，隨機 2 顆符石變成特殊符石。", effect: { bossStartSpecials: 2 } },
   { id: "boss-damage", rarity: "rare", name: "屠龍姿態", desc: "BOSS 關造成的傷害 +35%。", effect: { bossMultiplier: .35 } },
-  { id: "high-damage-coin", rarity: "rare", name: "賞金追擊", desc: "單次傷害超過 1000 時，獲得 60 金幣。", effect: { damageCoinMin: 1000, damageCoin: 60 } }
+  { id: "high-damage-coin", rarity: "rare", name: "賞金追擊", desc: "單次傷害超過 1000 時，獲得 20 金幣。", effect: { damageCoinMin: 1000, damageCoin: 20 } }
 ];
 
 const boardEl = document.getElementById("board");
@@ -82,6 +83,7 @@ const augmentListEl = document.getElementById("augment-list");
 const augmentModalEl = document.getElementById("augment-modal");
 const augmentOptionsEl = document.getElementById("augment-options");
 const augmentSubtitleEl = document.getElementById("augment-subtitle");
+const stageClearCardEl = document.getElementById("stage-clear-card");
 
 let board = [];
 let selected = null;
@@ -754,7 +756,7 @@ async function hitMonster(damage) {
   monsterEl.classList.add("hit");
   setTimeout(() => monsterEl.classList.remove("hit"), 180);
 
-  if (monsterHp <= 0) advanceStage();
+  if (monsterHp <= 0) await advanceStage();
   updateHud();
 }
 
@@ -770,13 +772,15 @@ async function playAttackImpact(damage) {
   await sleep(90);
 }
 
-function advanceStage() {
+async function advanceStage() {
   const cleared = STAGES[stageIndex];
 
   if (stageIndex < STAGES.length - 1) {
     const grantText = grantStageSpecials(cleared.grants);
     playRewardSound();
     pendingStageGrantText = grantText;
+    logEl.textContent = `第 ${stageIndex + 1} 關完成！準備進入增幅選擇。`;
+    await showStageClearCard();
     openAugmentChoice(grantText);
     logEl.textContent = `第 ${stageIndex + 1} 關勝利！盤面轉化 ${grantText}，選擇 1 個增幅。`;
     return;
@@ -790,6 +794,16 @@ function advanceStage() {
   playBossClearSound();
   showChest();
   logEl.textContent = `BOSS 擊破！寶箱出現，最高可開出 5000 金幣。`;
+}
+
+async function showStageClearCard() {
+  stageClearCardEl.classList.remove("show");
+  void stageClearCardEl.offsetWidth;
+  stageClearCardEl.classList.add("show");
+  stageClearCardEl.setAttribute("aria-hidden", "false");
+  await sleep(900);
+  stageClearCardEl.classList.remove("show");
+  stageClearCardEl.setAttribute("aria-hidden", "true");
 }
 
 function setStage(index) {

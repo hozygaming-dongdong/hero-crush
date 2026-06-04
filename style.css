@@ -50,6 +50,7 @@ button:active {
 }
 
 .game-shell {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, .5fr) auto minmax(0, 2.35fr);
   gap: 6px;
@@ -165,7 +166,7 @@ button:active {
   grid-column: 1 / -1;
   grid-row: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 6px;
   align-items: center;
   min-height: 28px;
@@ -176,16 +177,16 @@ button:active {
 }
 
 .augment-toggle {
-  position: relative;
-  z-index: 2;
-  grid-column: auto;
-  grid-row: auto;
-  justify-self: end;
-  min-height: 28px;
-  padding: 3px 7px;
-  border-radius: 8px;
-  font-size: 10px;
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 18;
+  min-height: 32px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
   white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(0,0,0,.42), inset 0 2px 0 rgba(255,255,255,.65), inset 0 -2px 0 rgba(94,45,13,.45);
 }
 
 .stage-progress {
@@ -1294,13 +1295,14 @@ p {
 
 .augment-panel {
   position: fixed;
-  right: max(10px, calc((100vw - 430px) / 2 + 10px));
-  top: 86px;
+  left: 50%;
+  bottom: 12px;
   z-index: 22;
   display: none;
-  width: min(310px, calc(100vw - 20px));
-  max-height: min(52dvh, 380px);
+  width: min(410px, calc(100vw - 20px));
+  max-height: min(46dvh, 360px);
   overflow: hidden;
+  transform: translateX(-50%);
   border: 2px solid #6a4824;
   border-radius: 12px;
   background: linear-gradient(#201827, #100d16);
@@ -1332,7 +1334,7 @@ p {
 .augment-list {
   display: grid;
   gap: 6px;
-  max-height: calc(min(52dvh, 380px) - 44px);
+  max-height: calc(min(46dvh, 360px) - 44px);
   overflow: auto;
   padding: 8px;
 }
@@ -1361,6 +1363,47 @@ p {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.25;
+}
+
+.stage-clear-card {
+  position: fixed;
+  left: 50%;
+  top: 44%;
+  z-index: 26;
+  display: none;
+  width: min(340px, 88vw);
+  padding: 18px 14px;
+  transform: translate(-50%, -50%);
+  border: 3px solid #6a4824;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255,255,210,.44), transparent 46%),
+    linear-gradient(#4a1b22, #180d16);
+  text-align: center;
+  box-shadow: 0 22px 50px rgba(0,0,0,.6), inset 0 0 0 2px rgba(255,236,150,.24);
+  pointer-events: none;
+}
+
+.stage-clear-card.show {
+  display: block;
+  animation: stageClearIn .9s ease-out forwards;
+}
+
+.stage-clear-card strong {
+  display: block;
+  color: #ffe875;
+  font-size: clamp(30px, 9vw, 48px);
+  font-weight: 1000;
+  line-height: .95;
+  text-shadow: 0 3px 0 #8c2718, 0 0 24px rgba(255, 219, 80, .8);
+}
+
+.stage-clear-card span {
+  display: block;
+  margin-top: 8px;
+  color: #fff2cd;
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .big-win {
@@ -1481,6 +1524,25 @@ p {
   100% {
     opacity: 0;
     transform: translate(-50%, -62%) scale(.98);
+  }
+}
+
+@keyframes stageClearIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -42%) scale(.72);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  68% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -58%) scale(.96);
   }
 }
 
