@@ -66,6 +66,7 @@ const hpFillEl = document.getElementById("hp-fill");
 const monsterEl = document.getElementById("monster");
 const monsterNameEl = document.getElementById("monster-name");
 const damagePopEl = document.getElementById("damage-pop");
+const damageBreakdownEl = document.getElementById("damage-breakdown");
 const newRoundBtn = document.getElementById("new-round");
 const stageProgressEl = document.getElementById("stage-progress");
 const stageLabelEl = document.getElementById("stage-label");
@@ -100,6 +101,7 @@ let activeAugments = [];
 let augmentChoices = [];
 let awaitingAugment = false;
 let pendingStageGrantText = "";
+let chestRolling = false;
 let audioStarted = false;
 let audioCtx = null;
 let musicTimer = null;
@@ -568,6 +570,7 @@ async function clearCells(cells, chain, label) {
   const finalCells = [...unique.values()];
   let raw = 0;
   const clearedTypes = new Set();
+  const clearedSpecials = new Set();
   let specialCleared = 0;
   for (const cell of finalCells) {
     const gem = board[cell.r][cell.c];
@@ -575,6 +578,7 @@ async function clearCells(cells, chain, label) {
     let cellDamage = DAMAGE[gem.type] * getTypeDamageMultiplier(gem.type);
     if (gem.special) {
       specialCleared++;
+      clearedSpecials.add(gem.special);
       cellDamage += 14 * getSpecialDamageMultiplier(gem.special);
     }
     raw += cellDamage;
@@ -583,9 +587,12 @@ async function clearCells(cells, chain, label) {
   const flatDamage = getConditionalFlatDamage({ chain, clearCount: finalCells.length, typeCount: clearedTypes.size, specialCleared });
   const damage = Math.round(baseDamage + flatDamage);
   const bonusCoins = getDamageCoinReward(damage);
+  const sources = getDamageSourceLabels({ chain, clearCount: finalCells.length, typeCount: clearedTypes.size, clearedTypes, clearedSpecials, specialCleared, bonusCoins });
   if (bonusCoins > 0) coins += bonusCoins;
   render(new Set(unique.keys()));
+  showDamageBreakdown(sources);
   logEl.textContent = `${label}！消除 ${finalCells.length} 格，造成 ${damage} 傷害${bonusCoins ? `，賞金 +${bonusCoins}` : ""}。`;
+  playImpactCallout(chain, damage);
   await sleep(260);
   for (const cell of finalCells) board[cell.r][cell.c] = null;
   return damage;
@@ -629,6 +636,36 @@ function getDamageCoinReward(damage) {
     const effect = augment.effect;
     return sum + (effect.damageCoinMin && damage >= effect.damageCoinMin ? effect.damageCoin || 0 : 0);
   }, 0);
+}
+
+function getDamageSourceLabels(context) {
+  const labels = [];
+  for (const augment of activeAugments) {
+    const effect = augment.effect;
+    if (effect.type && context.clearedTypes.has(effect.type)) labels.push(`${TYPE_LABELS[effect.type]} +${Math.round(effect.typeMultiplier * 100)}%`);
+    if (effect.special && context.clearedSpecials.has(effect.special)) labels.push(`${specialName(effect.special)} +${Math.round(effect.specialMultiplier * 100)}%`);
+    if (effect.allMultiplier) labels.push(`All +${Math.round(effect.allMultiplier * 100)}%`);
+    if (effect.bossMultiplier && stageIndex === 4) labels.push(`Boss +${Math.round(effect.bossMultiplier * 100)}%`);
+    if (effect.comboMin && context.chain >= effect.comboMin) labels.push(`Combo ${effect.comboMin}+ +${effect.flatDamage}`);
+    if (effect.clearMin && context.clearCount >= effect.clearMin) labels.push(`${effect.clearMin}+ Match +${effect.flatDamage}`);
+    if (effect.typeCountMin && context.typeCount >= effect.typeCountMin) labels.push(`5 Colors +${effect.flatDamage}`);
+    if (effect.specialFlat && context.specialCleared > 0) labels.push(`Special +${effect.specialFlat}`);
+  }
+  if (context.bonusCoins) labels.push(`Bounty +${context.bonusCoins}`);
+  return [...new Set(labels)].slice(0, 4);
+}
+
+function showDamageBreakdown(labels) {
+  if (!labels.length) return;
+  damageBreakdownEl.innerHTML = labels.map(label => `<span>${label}</span>`).join("");
+  damageBreakdownEl.classList.remove("show");
+  void damageBreakdownEl.offsetWidth;
+  damageBreakdownEl.classList.add("show");
+  damageBreakdownEl.setAttribute("aria-hidden", "false");
+  window.setTimeout(() => {
+    damageBreakdownEl.classList.remove("show");
+    damageBreakdownEl.setAttribute("aria-hidden", "true");
+  }, 920);
 }
 
 function showComboBurst(chain) {
@@ -1015,27 +1052,50 @@ function playComboSound(chain) {
   playTone(base, .09, "triangle", .07);
   playTone(base * 1.5, .08, "sine", .045, .045);
   if (chain >= 3) playTone(base * 2, .11, "square", .035, .09);
-  if (chain === 6) speakCombo666();
+  if (chain === 4) speakEnglishCue("Nice combo");
+  if (chain === 6) speakEnglishCue("Great combo");
+  if (chain >= 8) speakEnglishCue("Amazing combo");
 }
 
-function speakCombo666() {
+function speakEnglishCue(text) {
   if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
-    playCombo666Fallback();
+    playVoiceFallback();
     return;
   }
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance("老鐵六六六");
-  utterance.lang = "zh-CN";
-  utterance.rate = 1.12;
-  utterance.pitch = .86;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-US";
+  utterance.rate = 1.08;
+  utterance.pitch = .92;
   utterance.volume = 1;
   window.speechSynthesis.speak(utterance);
 }
 
-function playCombo666Fallback() {
+function playVoiceFallback() {
   [660, 660, 660, 880, 990, 1180].forEach((freq, index) => {
     playTone(freq, .1, index < 3 ? "square" : "triangle", .075, index * .08);
   });
+}
+
+function playImpactCallout(chain, damage) {
+  if (damage >= 1800) {
+    speakEnglishCue("Big hit");
+    playBigHitSound(damage);
+  } else if (chain >= 5) {
+    playHypeSound(chain);
+  }
+}
+
+function playHypeSound(chain) {
+  const lift = Math.min(chain, 10) * 42;
+  [740, 920, 1120].forEach((freq, index) => playTone(freq + lift, .09, "triangle", .05, index * .055));
+}
+
+function playBigHitSound(damage) {
+  const power = Math.min(1, damage / 2500);
+  playTone(70, .18, "square", .1 + power * .08);
+  playTone(480 + damage / 8, .14, "sawtooth", .06 + power * .06, .04);
+  playTone(980 + damage / 6, .11, "triangle", .045 + power * .04, .11);
 }
 
 function playSpecialSound(kind) {
@@ -1077,6 +1137,10 @@ function playChestSound(amount) {
   [520, 700, 940, 1180].forEach((freq, index) => playTone(freq + amount / 18, .13, "sine", .055, index * .055));
 }
 
+function playChestRollSound() {
+  [420, 500, 590, 700, 840].forEach((freq, index) => playTone(freq, .08, "square", .035, index * .065));
+}
+
 function flashSpecial(kind, origin, cells = []) {
   const className = kind === "rainbow" ? "special-rainbow" : kind === "bomb" ? "special-bomb" : kind === "col" ? "special-col" : "special-row";
   const x = ((origin.c + .5) / SIZE) * 100;
@@ -1115,6 +1179,20 @@ function showChest() {
   chestModalEl.classList.remove("opened");
   chestModalEl.classList.add("show");
   chestModalEl.setAttribute("aria-hidden", "false");
+}
+
+async function rollChestAmount(finalAmount) {
+  const duration = 820;
+  const interval = 70;
+  const steps = Math.floor(duration / interval);
+  for (let i = 0; i < steps; i++) {
+    const fake = 500 + Math.floor(Math.random() * 46) * 100;
+    chestCopyEl.textContent = `${fake}$`;
+    playTone(520 + i * 28, .045, "triangle", .035);
+    await sleep(interval);
+  }
+  chestCopyEl.textContent = `${finalAmount}$`;
+  await sleep(120);
 }
 
 function hideChest() {
@@ -1201,15 +1279,21 @@ augmentOptionsEl.addEventListener("click", event => {
   chooseAugment(Number(option.dataset.index));
 });
 
-chestButtonEl.addEventListener("click", () => {
-  if (!awaitingNextRound || !pendingChestReward) return;
+chestButtonEl.addEventListener("click", async () => {
+  if (!awaitingNextRound || !pendingChestReward || chestRolling) return;
   startAudio();
   const amount = pendingChestReward;
   pendingChestReward = 0;
-  coins += amount;
+  chestRolling = true;
   chestModalEl.classList.add("opened");
-  chestCopyEl.textContent = `開出 ${amount} 金幣！`;
+  chestCopyEl.textContent = "ROLLING...";
   chestCopyEl.classList.add("win");
+  logEl.textContent = "寶箱開獎中...";
+  playChestRollSound();
+  await rollChestAmount(amount);
+  coins += amount;
+  chestRolling = false;
+  chestCopyEl.textContent = `WIN ${amount}$`;
   logEl.textContent = `寶箱開出 ${amount} 金幣！按「下一輪」繼續。`;
   playChestSound(amount);
   updateHud();
