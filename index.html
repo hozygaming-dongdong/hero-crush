@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hero Crush</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game-shell">
+    <section class="topbar" aria-label="遊戲狀態">
+      <div class="game-title">Hero Crush</div>
+      <div class="stat">
+        <span>金錢</span>
+        <strong id="coins">1000</strong>
+      </div>
+      <div class="stat">
+        <span>BET</span>
+        <strong>10</strong>
+      </div>
+      <div class="stat">
+        <span>連鎖</span>
+        <strong id="combo">x1</strong>
+      </div>
+      <button id="new-round" type="button">新一輪</button>
+      <div class="run-status">
+        <div id="stage-progress" class="stage-progress" aria-label="關卡進度"></div>
+        <div id="boss-hint" class="boss-hint">第5關寶箱<br>WIN UP 5000$</div>
+        <div class="run-copy">
+          <strong id="stage-label">第 1 關 / 5</strong>
+          <span id="phase-label">小怪戰</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="battlefield">
+      <div class="monster-panel" aria-label="怪物">
+        <img class="battle-hero" src="assets/hero-full.svg" alt="" aria-hidden="true">
+        <div class="monster-stage">
+          <div id="damage-pop" class="damage-pop"></div>
+          <div id="slash-effect" class="slash-effect" aria-hidden="true"></div>
+          <img id="monster" class="sprite monster" src="assets/monster-slime.svg" alt="" aria-hidden="true">
+        </div>
+        <div class="hp-wrap">
+          <div class="hp-label">
+            <span id="monster-name">暗影史萊姆王</span>
+            <strong><span id="monster-hp">450</span>/<span id="monster-max-hp">450</span></strong>
+          </div>
+          <div class="hp-bar" aria-hidden="true"><span id="hp-fill"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="hero-strip" aria-label="勇者狀態">
+      <div class="hero-avatar">
+        <img class="hero-portrait" src="assets/hero-portrait.svg" alt="" aria-hidden="true">
+      </div>
+      <div class="hero-copy">
+        <strong>勇者</strong>
+        <p id="battle-log">交換相鄰符號開始攻擊。每次移動扣 10 金錢。</p>
+      </div>
+    </section>
+
+    <section class="board-area">
+      <div id="board" class="board" aria-label="三消棋盤"></div>
+      <div id="combo-burst" class="combo-burst" aria-hidden="true"></div>
+    </section>
+  </main>
+
+  <div id="chest-modal" class="chest-modal" aria-hidden="true">
+    <div class="chest-card">
+      <div class="chest-title">BOSS 寶箱</div>
+      <button id="chest-button" class="chest-button" type="button" aria-label="開啟寶箱">
+        <span class="chest-lid"></span>
+        <span class="chest-body"></span>
+        <span class="chest-lock"></span>
+      </button>
+      <p id="chest-copy">最高可開出 5000 金幣</p>
+    </div>
+  </div>
+  <div id="big-win" class="big-win" aria-hidden="true"></div>
+
+  <script src="game.js"></script>
+</body>
+</html>
