@@ -18,6 +18,7 @@
       <div class="run-status">
         <div id="stage-progress" class="stage-progress" aria-label="關卡進度"></div>
         <div id="boss-hint" class="boss-hint">第5關寶箱<br>WIN UP 5000$</div>
+        <button id="augment-toggle" class="augment-toggle" type="button" aria-expanded="false">增幅 x0</button>
         <div class="run-copy">
           <strong id="stage-label">第 1 關 / 5</strong>
           <span id="phase-label">小怪戰</span>
@@ -68,6 +69,20 @@
     </div>
   </div>
   <div id="big-win" class="big-win" aria-hidden="true"></div>
+  <div id="augment-modal" class="augment-modal" aria-hidden="true">
+    <div class="augment-card">
+      <div class="augment-title">選擇增幅</div>
+      <p id="augment-subtitle">本輪效果會累積到 BOSS 戰。</p>
+      <div id="augment-options" class="augment-options"></div>
+    </div>
+  </div>
+  <div id="augment-panel" class="augment-panel" aria-hidden="true">
+    <div class="augment-panel-head">
+      <strong>當前增幅</strong>
+      <button id="augment-close" type="button" aria-label="關閉增幅列表">×</button>
+    </div>
+    <div id="augment-list" class="augment-list"></div>
+  </div>
 
   <script src="game.js"></script>
 </body>

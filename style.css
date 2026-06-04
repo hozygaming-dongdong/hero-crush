@@ -165,7 +165,7 @@ button:active {
   grid-column: 1 / -1;
   grid-row: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 6px;
   align-items: center;
   min-height: 28px;
@@ -173,6 +173,19 @@ button:active {
   border: 2px solid #5f4728;
   border-radius: 8px;
   background: linear-gradient(#21182b, #121018);
+}
+
+.augment-toggle {
+  position: relative;
+  z-index: 2;
+  grid-column: auto;
+  grid-row: auto;
+  justify-self: end;
+  min-height: 28px;
+  padding: 3px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 .stage-progress {
@@ -1163,6 +1176,191 @@ p {
   color: #ffe875;
   font-size: 22px;
   text-shadow: 0 0 14px rgba(255, 219, 80, .7);
+}
+
+.augment-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  display: none;
+  place-items: center;
+  padding: 14px;
+  background: rgba(5, 4, 9, .74);
+  backdrop-filter: blur(3px);
+}
+
+.augment-modal.show {
+  display: grid;
+}
+
+.augment-card {
+  width: min(390px, 94vw);
+  padding: 14px;
+  border: 3px solid #6a4824;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 218, 104, .24), transparent 42%),
+    linear-gradient(#251a25, #120e18);
+  box-shadow: inset 0 0 0 2px rgba(255, 225, 146, .2), 0 22px 50px rgba(0,0,0,.58);
+  animation: chestIn .22s ease-out;
+}
+
+.augment-title {
+  color: #fff2cd;
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 0 2px 0 #7d2b1d, 0 0 18px rgba(255, 215, 90, .36);
+}
+
+#augment-subtitle {
+  margin: 4px 0 12px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.augment-options {
+  display: grid;
+  gap: 8px;
+}
+
+.augment-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  min-height: 76px;
+  padding: 9px;
+  border: 2px solid #564027;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1e1724, #0f1018);
+  color: #fff2cd;
+  text-align: left;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.04);
+}
+
+.augment-option:active {
+  transform: translateY(1px) scale(.99);
+}
+
+.augment-option strong,
+.augment-option span,
+.augment-option small {
+  display: block;
+}
+
+.augment-option strong {
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.augment-option span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.augment-option small {
+  align-self: start;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.augment-option.common small {
+  background: #5f6b76;
+  color: #f3f7ff;
+}
+
+.augment-option.rare {
+  border-color: #4da3ff;
+}
+
+.augment-option.rare small {
+  background: #1957a6;
+  color: #dff0ff;
+}
+
+.augment-option.epic {
+  border-color: #d65cff;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.04), 0 0 16px rgba(214, 92, 255, .2);
+}
+
+.augment-option.epic small {
+  background: #7c2bc1;
+  color: #fff0ff;
+}
+
+.augment-panel {
+  position: fixed;
+  right: max(10px, calc((100vw - 430px) / 2 + 10px));
+  top: 86px;
+  z-index: 22;
+  display: none;
+  width: min(310px, calc(100vw - 20px));
+  max-height: min(52dvh, 380px);
+  overflow: hidden;
+  border: 2px solid #6a4824;
+  border-radius: 12px;
+  background: linear-gradient(#201827, #100d16);
+  box-shadow: 0 18px 44px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255, 225, 146, .15);
+}
+
+.augment-panel.show {
+  display: block;
+}
+
+.augment-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 2px solid rgba(255, 216, 142, .18);
+  color: #fff2cd;
+}
+
+.augment-panel-head button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.augment-list {
+  display: grid;
+  gap: 6px;
+  max-height: calc(min(52dvh, 380px) - 44px);
+  overflow: auto;
+  padding: 8px;
+}
+
+.augment-list .empty {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.augment-list-item {
+  padding: 7px 8px;
+  border: 1px solid rgba(255, 216, 142, .22);
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+}
+
+.augment-list-item strong {
+  display: block;
+  color: #fff2cd;
+  font-size: 12px;
+}
+
+.augment-list-item span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
 }
 
 .big-win {

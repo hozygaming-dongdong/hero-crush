@@ -17,6 +17,41 @@ const DAMAGE = {
   coin: 11,
   rune: 14
 };
+const TYPE_LABELS = {
+  sword: "水",
+  fire: "火",
+  shield: "木",
+  coin: "光",
+  rune: "暗"
+};
+const RARITY_LABELS = {
+  common: "COMMON",
+  rare: "RARE",
+  epic: "EPIC"
+};
+const AUGMENT_POOL = [
+  { id: "coin-300", rarity: "common", name: "冒險小袋", desc: "立即獲得 300 金幣。", effect: { coinNow: 300 } },
+  { id: "coin-500", rarity: "rare", name: "閃亮錢袋", desc: "立即獲得 500 金幣。", effect: { coinNow: 500 } },
+  { id: "chest-min", rarity: "rare", name: "寶箱保底", desc: "BOSS 寶箱最低獎金 +300。", effect: { chestMin: 300 } },
+  { id: "chest-boost", rarity: "epic", name: "鍍金寶箱", desc: "BOSS 寶箱獎金 +15%。", effect: { chestMultiplier: .15 } },
+  { id: "all-damage", rarity: "rare", name: "勇者氣勢", desc: "所有符石傷害 +15%。", effect: { allMultiplier: .15 } },
+  { id: "water-boost", rarity: "common", name: "水流劍術", desc: "水符石傷害 +50%。", effect: { type: "sword", typeMultiplier: .5 } },
+  { id: "fire-boost", rarity: "common", name: "烈火斬擊", desc: "火符石傷害 +50%。", effect: { type: "fire", typeMultiplier: .5 } },
+  { id: "wood-boost", rarity: "common", name: "森之祝福", desc: "木符石傷害 +50%。", effect: { type: "shield", typeMultiplier: .5 } },
+  { id: "light-boost", rarity: "common", name: "聖光加護", desc: "光符石傷害 +50%。", effect: { type: "coin", typeMultiplier: .5 } },
+  { id: "dark-boost", rarity: "common", name: "暗月契約", desc: "暗符石傷害 +50%。", effect: { type: "rune", typeMultiplier: .5 } },
+  { id: "combo-3", rarity: "common", name: "連擊節奏", desc: "COMBO 達到 3 以上，額外 +120 傷害。", effect: { comboMin: 3, flatDamage: 120 } },
+  { id: "combo-5", rarity: "rare", name: "狂熱連擊", desc: "COMBO 達到 5 以上，額外 +320 傷害。", effect: { comboMin: 5, flatDamage: 320 } },
+  { id: "clear-4", rarity: "common", name: "四連突破", desc: "單次消除 4 顆以上，額外 +100 傷害。", effect: { clearMin: 4, flatDamage: 100 } },
+  { id: "clear-5", rarity: "rare", name: "五連重擊", desc: "單次消除 5 顆以上，額外 +240 傷害。", effect: { clearMin: 5, flatDamage: 240 } },
+  { id: "rainbow-types", rarity: "epic", name: "五色共鳴", desc: "單次消除包含 5 種屬性，額外 +500 傷害。", effect: { typeCountMin: 5, flatDamage: 500 } },
+  { id: "bomb-damage", rarity: "rare", name: "爆彈精通", desc: "爆炸符石傷害 +70%。", effect: { special: "bomb", specialMultiplier: .7 } },
+  { id: "rainbow-damage", rarity: "epic", name: "彩虹超載", desc: "彩虹符石傷害 +90%。", effect: { special: "rainbow", specialMultiplier: .9 } },
+  { id: "special-flat", rarity: "rare", name: "符石共振", desc: "特殊符石被消除時，額外 +150 傷害。", effect: { specialFlat: 150 } },
+  { id: "boss-specials", rarity: "epic", name: "決戰布陣", desc: "進入 BOSS 關時，隨機 2 顆符石變成特殊符石。", effect: { bossStartSpecials: 2 } },
+  { id: "boss-damage", rarity: "rare", name: "屠龍姿態", desc: "BOSS 關造成的傷害 +35%。", effect: { bossMultiplier: .35 } },
+  { id: "high-damage-coin", rarity: "rare", name: "賞金追擊", desc: "單次傷害超過 1000 時，獲得 60 金幣。", effect: { damageCoinMin: 1000, damageCoin: 60 } }
+];
 
 const boardEl = document.getElementById("board");
 const boardAreaEl = document.querySelector(".board-area");
@@ -40,6 +75,13 @@ const chestButtonEl = document.getElementById("chest-button");
 const chestCopyEl = document.getElementById("chest-copy");
 const slashEffectEl = document.getElementById("slash-effect");
 const bigWinEl = document.getElementById("big-win");
+const augmentToggleEl = document.getElementById("augment-toggle");
+const augmentPanelEl = document.getElementById("augment-panel");
+const augmentCloseEl = document.getElementById("augment-close");
+const augmentListEl = document.getElementById("augment-list");
+const augmentModalEl = document.getElementById("augment-modal");
+const augmentOptionsEl = document.getElementById("augment-options");
+const augmentSubtitleEl = document.getElementById("augment-subtitle");
 
 let board = [];
 let selected = null;
@@ -52,6 +94,10 @@ let busy = false;
 let awaitingNextRound = false;
 let pendingStartSpecials = [];
 let pendingChestReward = 0;
+let activeAugments = [];
+let augmentChoices = [];
+let awaitingAugment = false;
+let pendingStageGrantText = "";
 let audioStarted = false;
 let audioCtx = null;
 let musicTimer = null;
@@ -146,7 +192,7 @@ function updateHud() {
   hpFillEl.style.width = `${Math.max(0, (monsterHp / monsterMaxHp) * 100)}%`;
   monsterNameEl.textContent = stage.name;
   stageLabelEl.textContent = `第 ${stageIndex + 1} 關 / 5`;
-  phaseLabelEl.textContent = awaitingNextRound ? `第 ${round} 輪結算` : stage.phase;
+  phaseLabelEl.textContent = awaitingAugment ? "選擇增幅" : awaitingNextRound ? `第 ${round} 輪結算` : stage.phase;
   bossHintEl.innerHTML = stageIndex === 4 ? "BOSS寶箱<br>WIN UP 5000$" : "第5關寶箱<br>WIN UP 5000$";
   monsterEl.className = `sprite monster stage-${stageIndex + 1}${stageIndex === 4 ? " boss" : ""}`;
   monsterEl.src = stage.art;
@@ -155,10 +201,12 @@ function updateHud() {
     const state = index < stageIndex ? "done" : index === stageIndex ? "active" : "";
     return `<span class="${state} ${index === 4 ? "boss-dot" : ""}">${index === 4 ? "B" : index + 1}</span>`;
   }).join("");
+  augmentToggleEl.textContent = `增幅 x${activeAugments.length}`;
+  renderAugmentList();
 }
 
 async function onTileClick(r, c) {
-  if (busy || awaitingNextRound) return;
+  if (busy || awaitingNextRound || awaitingAugment) return;
   startAudio();
   if (!selected) {
     selected = { r, c };
@@ -517,16 +565,68 @@ async function clearCells(cells, chain, label) {
   }
   const finalCells = [...unique.values()];
   let raw = 0;
+  const clearedTypes = new Set();
+  let specialCleared = 0;
   for (const cell of finalCells) {
     const gem = board[cell.r][cell.c];
-    raw += DAMAGE[gem.type] + (gem.special ? 14 : 0);
+    clearedTypes.add(gem.type);
+    let cellDamage = DAMAGE[gem.type] * getTypeDamageMultiplier(gem.type);
+    if (gem.special) {
+      specialCleared++;
+      cellDamage += 14 * getSpecialDamageMultiplier(gem.special);
+    }
+    raw += cellDamage;
   }
-  const damage = Math.round(raw * (1 + (chain - 1) * 0.45));
+  const baseDamage = raw * getGlobalDamageMultiplier() * (1 + (chain - 1) * 0.45);
+  const flatDamage = getConditionalFlatDamage({ chain, clearCount: finalCells.length, typeCount: clearedTypes.size, specialCleared });
+  const damage = Math.round(baseDamage + flatDamage);
+  const bonusCoins = getDamageCoinReward(damage);
+  if (bonusCoins > 0) coins += bonusCoins;
   render(new Set(unique.keys()));
-  logEl.textContent = `${label}！消除 ${finalCells.length} 格，造成 ${damage} 傷害。`;
+  logEl.textContent = `${label}！消除 ${finalCells.length} 格，造成 ${damage} 傷害${bonusCoins ? `，賞金 +${bonusCoins}` : ""}。`;
   await sleep(260);
   for (const cell of finalCells) board[cell.r][cell.c] = null;
   return damage;
+}
+
+function getTypeDamageMultiplier(type) {
+  return 1 + activeAugments.reduce((sum, augment) => {
+    const effect = augment.effect;
+    return sum + (effect.type === type ? effect.typeMultiplier || 0 : 0);
+  }, 0);
+}
+
+function getSpecialDamageMultiplier(special) {
+  return 1 + activeAugments.reduce((sum, augment) => {
+    const effect = augment.effect;
+    return sum + (effect.special === special ? effect.specialMultiplier || 0 : 0);
+  }, 0);
+}
+
+function getGlobalDamageMultiplier() {
+  return 1 + activeAugments.reduce((sum, augment) => {
+    const effect = augment.effect;
+    return sum + (effect.allMultiplier || 0) + (stageIndex === 4 ? effect.bossMultiplier || 0 : 0);
+  }, 0);
+}
+
+function getConditionalFlatDamage(context) {
+  return activeAugments.reduce((sum, augment) => {
+    const effect = augment.effect;
+    let active = false;
+    if (effect.comboMin && context.chain >= effect.comboMin) active = true;
+    if (effect.clearMin && context.clearCount >= effect.clearMin) active = true;
+    if (effect.typeCountMin && context.typeCount >= effect.typeCountMin) active = true;
+    if (effect.specialFlat && context.specialCleared > 0) return sum + effect.specialFlat;
+    return sum + (active ? effect.flatDamage || 0 : 0);
+  }, 0);
+}
+
+function getDamageCoinReward(damage) {
+  return activeAugments.reduce((sum, augment) => {
+    const effect = augment.effect;
+    return sum + (effect.damageCoinMin && damage >= effect.damageCoinMin ? effect.damageCoin || 0 : 0);
+  }, 0);
 }
 
 function showComboBurst(chain) {
@@ -676,15 +776,17 @@ function advanceStage() {
   if (stageIndex < STAGES.length - 1) {
     const grantText = grantStageSpecials(cleared.grants);
     playRewardSound();
-    stageIndex++;
-    setStage(stageIndex);
-    logEl.textContent = `第 ${stageIndex} 關勝利！不給金錢，盤面轉化 ${grantText}。`;
+    pendingStageGrantText = grantText;
+    openAugmentChoice(grantText);
+    logEl.textContent = `第 ${stageIndex + 1} 關勝利！盤面轉化 ${grantText}，選擇 1 個增幅。`;
     return;
   }
 
   awaitingNextRound = true;
   pendingStartSpecials = [...cleared.grants];
   pendingChestReward = randomChestReward();
+  activeAugments = [];
+  closeAugmentPanel();
   playBossClearSound();
   showChest();
   logEl.textContent = `BOSS 擊破！寶箱出現，最高可開出 5000 金幣。`;
@@ -694,7 +796,110 @@ function setStage(index) {
   const stage = STAGES[index];
   monsterMaxHp = stage.hp + Math.max(0, round - 1) * (index === 4 ? 150 : 35);
   monsterHp = monsterMaxHp;
+  if (index === 4) applyBossStartAugments();
   updateHud();
+}
+
+function openAugmentChoice(grantText) {
+  awaitingAugment = true;
+  augmentChoices = drawAugmentChoices();
+  augmentSubtitleEl.textContent = `獲得 ${grantText}。選 1 個增幅，效果累積到 BOSS 戰。`;
+  augmentOptionsEl.innerHTML = augmentChoices.map((augment, index) => `
+    <button class="augment-option ${augment.rarity}" type="button" data-index="${index}">
+      <span>
+        <strong>${augment.name}</strong>
+        <span>${augment.desc}</span>
+      </span>
+      <small>${RARITY_LABELS[augment.rarity]}</small>
+    </button>
+  `).join("");
+  augmentModalEl.classList.add("show");
+  augmentModalEl.setAttribute("aria-hidden", "false");
+  updateHud();
+}
+
+function drawAugmentChoices() {
+  const chosen = [];
+  const used = new Set();
+  while (chosen.length < 3 && used.size < AUGMENT_POOL.length) {
+    const rarity = rollAugmentRarity();
+    const candidates = AUGMENT_POOL.filter(augment => augment.rarity === rarity && !used.has(augment.id));
+    const fallback = AUGMENT_POOL.filter(augment => !used.has(augment.id));
+    const pool = candidates.length ? candidates : fallback;
+    const augment = pool[Math.floor(Math.random() * pool.length)];
+    used.add(augment.id);
+    chosen.push(augment);
+  }
+  return chosen;
+}
+
+function rollAugmentRarity() {
+  const roll = Math.random();
+  const epicChance = Math.min(.22, .06 + stageIndex * .045);
+  const rareChance = Math.min(.42, .24 + stageIndex * .04);
+  if (roll < epicChance) return "epic";
+  if (roll < epicChance + rareChance) return "rare";
+  return "common";
+}
+
+function chooseAugment(index) {
+  const augment = augmentChoices[index];
+  if (!augment || !awaitingAugment) return;
+  activeAugments.push(augment);
+  applyImmediateAugment(augment);
+  awaitingAugment = false;
+  augmentChoices = [];
+  augmentModalEl.classList.remove("show");
+  augmentModalEl.setAttribute("aria-hidden", "true");
+  stageIndex++;
+  setStage(stageIndex);
+  logEl.textContent = `選擇「${augment.name}」。自動前進到第 ${stageIndex + 1} 關。`;
+  playRewardSound();
+  render();
+}
+
+function applyImmediateAugment(augment) {
+  if (augment.effect.coinNow) coins += augment.effect.coinNow;
+}
+
+function applyBossStartAugments() {
+  const count = activeAugments.reduce((sum, augment) => sum + (augment.effect.bossStartSpecials || 0), 0);
+  const specials = ["striped-row", "striped-col", "bomb", "rainbow"];
+  const applied = [];
+  for (let i = 0; i < count; i++) {
+    const pos = randomUpgradeableCell();
+    if (!pos) break;
+    const special = specials[Math.floor(Math.random() * specials.length)];
+    board[pos.r][pos.c].special = special;
+    applied.push(specialName(special));
+  }
+  if (applied.length) logEl.textContent = `BOSS 開戰布陣：${applied.join("、")} 已注入盤面。`;
+}
+
+function renderAugmentList() {
+  if (!activeAugments.length) {
+    augmentListEl.innerHTML = `<div class="empty">目前沒有增幅。打贏 1-4 關後可選擇。</div>`;
+    return;
+  }
+  augmentListEl.innerHTML = activeAugments.map((augment, index) => `
+    <div class="augment-list-item">
+      <strong>${index + 1}. ${augment.name} <small>${RARITY_LABELS[augment.rarity]}</small></strong>
+      <span>${augment.desc}</span>
+    </div>
+  `).join("");
+}
+
+function toggleAugmentPanel() {
+  const show = !augmentPanelEl.classList.contains("show");
+  augmentPanelEl.classList.toggle("show", show);
+  augmentPanelEl.setAttribute("aria-hidden", show ? "false" : "true");
+  augmentToggleEl.setAttribute("aria-expanded", show ? "true" : "false");
+}
+
+function closeAugmentPanel() {
+  augmentPanelEl.classList.remove("show");
+  augmentPanelEl.setAttribute("aria-hidden", "true");
+  augmentToggleEl.setAttribute("aria-expanded", "false");
 }
 
 function grantStageSpecials(grants) {
@@ -730,6 +935,13 @@ function specialName(special) {
 function startRound(nextRound = false) {
   selected = null;
   awaitingNextRound = false;
+  awaitingAugment = false;
+  activeAugments = [];
+  augmentChoices = [];
+  pendingStageGrantText = "";
+  augmentModalEl.classList.remove("show");
+  augmentModalEl.setAttribute("aria-hidden", "true");
+  closeAugmentPanel();
   hideChest();
   if (nextRound) round++;
   stageIndex = 0;
@@ -855,7 +1067,11 @@ function flashSpecial(kind, origin, cells = []) {
 }
 
 function randomChestReward() {
-  return 500 + Math.floor(Math.random() * 46) * 100;
+  const minBonus = activeAugments.reduce((sum, augment) => sum + (augment.effect.chestMin || 0), 0);
+  const multiplier = 1 + activeAugments.reduce((sum, augment) => sum + (augment.effect.chestMultiplier || 0), 0);
+  const base = 500 + Math.floor(Math.random() * 46) * 100;
+  const boosted = Math.round(Math.max(base, 500 + minBonus) * multiplier / 100) * 100;
+  return Math.min(5000, boosted);
 }
 
 function showChest() {
@@ -932,8 +1148,22 @@ function sleep(ms) {
 }
 
 newRoundBtn.addEventListener("click", () => {
-  if (busy) return;
+  if (busy || awaitingAugment) return;
   startRound(awaitingNextRound);
+});
+
+augmentToggleEl.addEventListener("click", () => {
+  renderAugmentList();
+  toggleAugmentPanel();
+});
+
+augmentCloseEl.addEventListener("click", closeAugmentPanel);
+
+augmentOptionsEl.addEventListener("click", event => {
+  const option = event.target.closest(".augment-option");
+  if (!option) return;
+  startAudio();
+  chooseAugment(Number(option.dataset.index));
 });
 
 chestButtonEl.addEventListener("click", () => {
