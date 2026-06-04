@@ -10,19 +10,11 @@
   <main class="game-shell">
     <section class="topbar" aria-label="遊戲狀態">
       <div class="game-title">Hero Crush</div>
-      <div class="stat">
-        <span>金錢</span>
-        <strong id="coins">1000</strong>
+      <div class="quick-status" aria-label="資產與投注">
+        <span>金幣 <strong id="coins">1000</strong></span>
+        <span>BET 10</span>
       </div>
-      <div class="stat">
-        <span>BET</span>
-        <strong>10</strong>
-      </div>
-      <div class="stat">
-        <span>連鎖</span>
-        <strong id="combo">x1</strong>
-      </div>
-      <button id="new-round" type="button">新一輪</button>
+      <button id="new-round" type="button" aria-label="重開">重開</button>
       <div class="run-status">
         <div id="stage-progress" class="stage-progress" aria-label="關卡進度"></div>
         <div id="boss-hint" class="boss-hint">第5關寶箱<br>WIN UP 5000$</div>
@@ -52,9 +44,6 @@
     </section>
 
     <section class="hero-strip" aria-label="勇者狀態">
-      <div class="hero-avatar">
-        <img class="hero-portrait" src="assets/hero-portrait.svg" alt="" aria-hidden="true">
-      </div>
       <div class="hero-copy">
         <strong>勇者</strong>
         <p id="battle-log">交換相鄰符號開始攻擊。每次移動扣 10 金錢。</p>

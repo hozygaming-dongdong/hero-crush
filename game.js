@@ -377,7 +377,7 @@ async function resolveBoard(origin) {
   while (true) {
     const matches = collectMatches();
     if (matches.groups.length === 0) break;
-    comboEl.textContent = `x${chain}`;
+    if (comboEl) comboEl.textContent = `x${chain}`;
 
     const createAt = chooseSpecial(matches.groups, origin);
     const cells = new Map();
@@ -394,7 +394,7 @@ async function resolveBoard(origin) {
     await sleep(180);
     chain++;
   }
-  comboEl.textContent = "x1";
+  if (comboEl) comboEl.textContent = "x1";
   return total;
 }
 
